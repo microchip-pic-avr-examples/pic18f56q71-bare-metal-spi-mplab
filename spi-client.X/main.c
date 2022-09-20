@@ -63,86 +63,114 @@
 // Use project enums instead of #define for ON and OFF.
 
 #include <xc.h>
-#include "spi1_host.h"
+#include "spi1_client.h"
+#include "interrupts.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
-bool SPI_TEST_Exchange(void)
+#define BUFFER_SIZE 64
+static volatile uint8_t buffer[BUFFER_SIZE];
+static volatile uint8_t readIndex = 0, writeIndex = 0;
+
+/* 
+ * Expected Behavior
+ * Use a host to transmit a constant byte pattern (such as 0x01, 0xF0, 0x03, etc...)
+ * After the 1st complete cycle, the device will retransmit the same values it received.
+ */
+void SPI_TEST_Polling(void)
 {
-    uint8_t testPattern[] = {0xA5, 0x00, 0x7F, 0xAA, 0x99};
-    uint8_t results[5];
-
-    //Test Single Byte Exchange
-    results[0] = SPI1_transferByte(testPattern[0]);
-
-    //Test Multi-Byte Exchange (1 to 4)
-    SPI1_transferBytes(&testPattern[1], &results[1], 4);
+    bool active = false;
     
-    //Validate Data
-    for (uint8_t i = 0; i < sizeof(testPattern); i++)
+    while (1)
     {
-        if (results[i] != testPattern[i])
+        if (SPI1_isStopped())
         {
-            return false;
+            //Stop
+            
+            active = false;
+            SPI1_clearStopFlag();
+            SPI1_flushBuffer();
+        }
+        else if (SPI1_isStarted())
+        {
+            //Start
+
+            //Reset Indexes
+            readIndex = 0;
+            writeIndex = 0;
+            
+            //Update State
+            active = true;
+            
+            //Clear Flag
+            SPI1_clearStartFlag();
+        }
+        else if (active)
+        {
+            //Data can be read
+            while (SPI1_canReadData() && (readIndex <= BUFFER_SIZE))
+            {
+                buffer[readIndex] = SPI1_readData();
+                readIndex++;
+            }
+
+            //Data can be written
+            while (SPI1_canWriteData() && (writeIndex <= BUFFER_SIZE))
+            {
+                SPI1_writeData(buffer[writeIndex]);
+                writeIndex++;
+            }
+
         }
     }
-    
-    return true;
 }
 
-bool SPI_TEST_Send(void)
+void SPI_TEST_myRXFunction(uint8_t data)
 {
-    uint8_t testPattern[] = { 0xA0, 0x00, 0x01, 0x02, 0x03};
-    
-    //Test byte send
-    SPI1_sendByte(testPattern[0]);
-    
-    //Test multi-byte send
-    SPI1_sendBytes(&testPattern[1], 4);
-    
-    //RX should not be set
-    if (PIR3bits.SPI1RXIF)
-    {
-        return false;
-    }
-    
-    //Validate behavior with logic analyzer
-    return true;
+    buffer[readIndex] = data;
+    readIndex++;
 }
 
-bool SPI_TEST_Receive(void)
+uint8_t SPI_TEST_myTXFunction(void)
 {
-    //To test this function, connect the MISO line to VDD (3.3V)
-    uint8_t receiveData[5];
-    
-    //Test Single Byte Receive
-    receiveData[0] = SPI1_recieveByte();
-    
-    //Test Multi-Byte Receive
-    SPI1_receiveBytes(&receiveData[1], 4);
-
-    for (uint8_t i = 0; i < sizeof(receiveData); i++)
-    {
-        if (receiveData[i] != 0xFF)
-        {
-            return false;
-        }
-    }
-    
-    return true;
+    //Caution: Due to FIFO, n + 2 bytes are loaded
+    uint8_t data = buffer[writeIndex];
+    writeIndex++;
+    return data;
 }
 
-#define TEST_ENABLE_TX
-//#define TEST_ENABLE_RX
+void SPI_TEST_myStartFunction(void)
+{
+    LATC7 = !LATC7;
+}
 
-void main(void) {
-    
+void SPI_TEST_myStopFunction(void)
+{
+    //Flush the buffer
+    SPI1_flushBuffer();
+    readIndex = 0;
+    writeIndex = 0;
+
+}
+
+//Tests to run (only 1 will be run)
+//#define TEST_SPI_POLLING
+#define TEST_SPI_INT
+
+void main(void) {    
     //Init SPI I/O
     SPI1_initPins();
     
     //Init the SPI peripheral in Host mode
-    SPI1_initHost();
+    SPI1_initClient();
+    
+    //Enable TX and RX
+    SPI1_enableTransmit();
+    SPI1_enableReceive();
+    
+    //Init Interrupts
+    Interrupts_init();
     
     //Configure LED0 on Board
     TRISC7 = 0;
@@ -150,43 +178,26 @@ void main(void) {
     
     bool ok = false;
     
-#ifdef TEST_ENABLE_TX
+#ifdef TEST_SPI_POLLING
     
-    //Test Exchange Functions
-    ok = SPI_TEST_Exchange();
+    //Note: Infinite Loop - does not execute code below
+    SPI_TEST_Polling();
+        
+#elif defined TEST_SPI_INT
     
-    if (!ok)
-    {
-        //If test failed, set LED
-        LATC7 = 0;
-    }
+    SPI1_setTXHandler(&SPI_TEST_myTXFunction);
+    SPI1_setRXHandler(&SPI_TEST_myRXFunction);
+    SPI1_setStartHandler(&SPI_TEST_myStartFunction);
+    SPI1_setStopHandler(&SPI_TEST_myStopFunction);
     
-    //Test Send Functions
-    ok = SPI_TEST_Send();
-    
-    if (!ok)
-    {
-        //If test failed, set LED
-        LATC7 = 0;
-    }
-    
-#elif defined TEST_ENABLE_RX
-    
-    //Test Read Functions
-    //Connect MISO to 3.3V before running this test!
-    ok = SPI_TEST_Receive();
-    
-    if (!ok)
-    {
-        //If test failed, set LED
-        LATC7 = 0;
-    }
+    //Enable Interrupts
+    SPI1_enableInterrupts();    
+    Interrupts_enable();
     
 #endif
-
+    
     while (1)
     {
-        
     }
     
     return;

@@ -1,4 +1,4 @@
-#include "spi_host.h"
+#include "spi1_host.h"
 
 #include <xc.h>
 #include <stdint.h>
@@ -6,7 +6,7 @@
 
 //Initializes a SPI Host
 //I/O must be initialized separately
-void SPI_initHost(void)
+void SPI1_initHost(void)
 {
     //Host Mode, Bit Mode
     SPI1CON0 = 0x00;
@@ -33,12 +33,12 @@ void SPI_initHost(void)
 }
 
 //Initializes the I/O for the SPI Host
-void SPI_initPins(void)
+void SPI1_initPins(void)
 {
     //RC2 - SDO
     //RC5 - SDI
     //RC6 - SCK
-    //RA5 - CS1
+    //RA5 - CS1 (alt. SS1)
     
     //SDO Config
     TRISC2 = 0;
@@ -53,35 +53,37 @@ void SPI_initPins(void)
     TRISC6 = 0;
     RC6PPS = 0x1D;
     
+#ifdef HW_SS_ENABLE
     //CS Config
     TRISA5 = 0;
     RA5PPS = 0x1F;
+#endif
 }
 
 //Sends and receives a single byte
-uint8_t SPI_transferByte(uint8_t data)
+uint8_t SPI1_transferByte(uint8_t data)
 {
     uint8_t output = data;
-    SPI_transferBytes(&output, &output, 1);
+    SPI1_transferBytes(&output, &output, 1);
     return output;
 }
 
 //Sends a single byte. Received data is discarded.
-void SPI_sendByte(uint8_t data)
+void SPI1_sendByte(uint8_t data)
 {
-    SPI_sendBytes(&data, 1);
+    SPI1_sendBytes(&data, 1);
 }
 
 //Receives a single byte. Transmitted data is 0x00
-uint8_t SPI_recieveByte(void)
+uint8_t SPI1_recieveByte(void)
 {
     uint8_t rx = 0x00;
-    SPI_receiveBytes(&rx, 1);
+    SPI1_receiveBytes(&rx, 1);
     return rx;
 }
 
 //Send and receives LEN bytes.
-void SPI_transferBytes(uint8_t* txData, uint8_t* rxData, uint8_t len)
+void SPI1_transferBytes(uint8_t* txData, uint8_t* rxData, uint8_t len)
 {
     //Clear data buffers
     SPI1STATUSbits.CLRBF = 1;
@@ -130,7 +132,7 @@ void SPI_transferBytes(uint8_t* txData, uint8_t* rxData, uint8_t len)
 }
 
 //Sends LEN bytes. Received data is discarded.
-void SPI_sendBytes(uint8_t* txData, uint8_t len)
+void SPI1_sendBytes(uint8_t* txData, uint8_t len)
 {
     //Clear data buffers
     SPI1STATUSbits.CLRBF = 1;
@@ -164,7 +166,7 @@ void SPI_sendBytes(uint8_t* txData, uint8_t len)
 }
 
 //Receives LEN bytes. Transmitted data is 0x00
-void SPI_receiveBytes(uint8_t* rxData, uint8_t len)
+void SPI1_receiveBytes(uint8_t* rxData, uint8_t len)
 {
     //Clear data buffers
     SPI1STATUSbits.CLRBF = 1;
