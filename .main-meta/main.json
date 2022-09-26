@@ -4,8 +4,8 @@
     "content": {
         "metaDataVersion": "1.3.0",
         "name": "com.microchip.mcu8.mplabx.project.pic18f56q71-bare-metal-spi-mplab",
-        "version": " ",
-        "displayName": "",
+        "version": "1.0.0",
+        "displayName": "Bare Metal SPI for PIC18F56Q71 Family of MCUs",
         "projectName": "pic18f56q71-bare-metal-spi-mplab",
         "shortDescription": "This example provides a reference bare metal SPI driver for use with the PIC18F56Q71 family of microcontrollers.",
         "ide": {
@@ -19,12 +19,8 @@
             }
         ],
         "dfp": {
-            "name": "",
-            "semverRange": ""
-        },
-        "configurator": {
-            "name": "",
-            "semverRange": ""
+            "name": "PIC18F-Q_DFP",
+            "semverRange": "^1.14.237"
         },
         "device": {
             "metaDataVersion": "1.0.0",
@@ -36,9 +32,13 @@
                 "versionRange": "*"
             }
         },
-        "author": "Prasad Aradhya",
-        "peripherals": [],
-        "keywords": [],
+        "author": "Robert Perkel",
+        "peripherals": [
+            "SPI"
+        ],
+        "keywords": [
+            "SPI", "Bare Metal"
+        ],
         "additionalData": {
             "longDescription": {
                 "metaDataVersion": "1.0.0",

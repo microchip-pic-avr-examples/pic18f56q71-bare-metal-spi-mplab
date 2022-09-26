@@ -38,7 +38,7 @@ void SPI1_initPins(void)
     //RC2 - SDO
     //RC5 - SDI
     //RC6 - SCK
-    //RA5 - CS1 (alt. SS1)
+    //RA5 - SS1 (alt. CS1)
     
     //SDO Config
     TRISC2 = 0;
@@ -61,10 +61,10 @@ void SPI1_initPins(void)
 }
 
 //Sends and receives a single byte
-uint8_t SPI1_transferByte(uint8_t data)
+uint8_t SPI1_exchangeByte(uint8_t data)
 {
     uint8_t output = data;
-    SPI1_transferBytes(&output, &output, 1);
+    SPI1_exchangeBytes(&output, &output, 1);
     return output;
 }
 
@@ -83,7 +83,7 @@ uint8_t SPI1_recieveByte(void)
 }
 
 //Send and receives LEN bytes.
-void SPI1_transferBytes(uint8_t* txData, uint8_t* rxData, uint8_t len)
+void SPI1_exchangeBytes(uint8_t* txData, uint8_t* rxData, uint8_t len)
 {
     //Clear data buffers
     SPI1STATUSbits.CLRBF = 1;
