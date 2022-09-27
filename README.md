@@ -3,24 +3,26 @@
 [![MCHP](images/microchip.png)](https://www.microchip.com)
 
 # Bare Metal SPI for the PIC18F56Q71 Family of Microcontrollers
-This example provides bare metal reference code for the SPI peripheral of the PIC18F56Q71 family of microcontrollers. Also compatiable (with minor modifications) to otber devices with a standalone SPI peripheral, such as the PIC18F16Q41 family. 
-
+This example provides bare metal reference code for the SPI peripheral of the PIC18F56Q71 family of microcontrollers. Also compatiable (with minor modifications) with otber devices containing a standalone SPI peripheral, such as the PIC18F16Q41 family. 
 
 ## Related Documentation
 
+- [Bare Metal I<sup>2</sup>C Driver for PIC18F56Q71](https://github.com/microchip-pic-avr-examples/pic18f56q71-bare-metal-i2c-mplab)
+- [Bare Metal (MSSP) SPI Driver for PIC16F15244](https://github.com/microchip-pic-avr-examples/pic16f15244-bare-metal-spi-mplab)
+- [Bare Metal (MSSP) I<sup>2</sup>C Driver for PIC16F15244](https://github.com/microchip-pic-avr-examples/pic16f15244-bare-metal-i2c-mplab)
 
 ## Software Used
 
-- MPLAB® X IDE 6.0.0 or newer [(MPLAB® X IDE 6.0)](#)
-- MPLAB XC8 2.40.0 or newer compiler [(MPLAB XC8 2.40)](#)
+- MPLAB® X IDE 6.0.0 or newer [(MPLAB® X IDE 6.0)](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide?utm_source=GitHub&utm_medium=TextLink&utm_campaign=MCU8_MMTCha_pic18q71&utm_content=pic18f56q71-bare-metal-spi-mplab)
+- MPLAB XC8 2.40.0 or newer compiler [(MPLAB XC8 2.40)](https://www.microchip.com/en-us/tools-resources/develop/mplab-xc-compilers?utm_source=GitHub&utm_medium=TextLink&utm_campaign=MCU8_MMTCha_pic18q71&utm_content=pic18f56q71-bare-metal-spi-mplab)
 
 ## Hardware Used
 
 - PIC18F56Q71 Curiosity Nano Evaluation Kit
-- Curiosity Nano Base Board
+- [Curiosity Nano Base Board (AC164162)](https://www.microchip.com/en-us/development-tool/AC164162?utm_source=GitHub&utm_medium=TextLink&utm_campaign=MCU8_MMTCha_pic18q71&utm_content=pic18f56q71-bare-metal-spi-mplab)
 - Wire
 
-For client testing, a SPI host is required. A sutible host was created with a PIC18F16Q41 Curiosity Nano and this host mode driver. 
+For client testing, a SPI host is required. A sutible host was created with a [PIC18F16Q41 Curiosity Nano](https://www.microchip.com/en-us/development-tool/EV26Q64A?utm_source=GitHub&utm_medium=TextLink&utm_campaign=MCU8_MMTCha_pic18q71&utm_content=pic18f56q71-bare-metal-spi-mplab) and this host mode driver. 
 
 ## Default Pin Assignments
 
@@ -75,7 +77,7 @@ By default, pins RC2, RC5, RC6, and RA5 are used by the driver (see *Default Pin
 #### Disabling Hardware Control
 In `spi1_host.h`, hardware control of SS can be disabled by commenting out `HW_SS_ENABLE`. When enabled, the hardware peripheral automatically asserts and releases SS during communication. However, the time between SS and and SCLK is very short, which may fail to meet timing requirements for some devices. In this case, SS should controlled by discrete I/O operations, rather than the hardware directly. 
 
-**Important: The (desired) SS pin must be configured as an output elsewhere in the program.**
+**Important: If disabled, the SS pin must be configured as an output elsewhere in the program.**
 
 ### Testing Setup  
 To test host mode operation, 3 tests were written.
@@ -88,7 +90,7 @@ To test host mode operation, 3 tests were written.
 
 Tests 1 and 2 use MISO and MOSI connected together in loopback mode, while test 3 uses MISO tied to 3.3V (**MOSI should be left floating. Do not connect a SPI client.**)
 
-Tests can be switched by enabling the macros `TEST_ENABLE_TX` for 1 and 2, and `TEST_ENABLE_RX` for 3. 
+Tests can be switched by enabling the macros `TEST_ENABLE_TX` to run 1 and 2, and `TEST_ENABLE_RX` to run 3. 
 
 #### Exchange Tests  
 In this test, the functions `SPI1_exchangeByte` and `SPI1_exchangeBytes` are called to send and receive data. A test pattern is transmitted and received by the same hardware module. The test validates that the same byte sequence sent is also received.
@@ -106,7 +108,7 @@ In this test, the device reads 5 bytes. Since MISO is tied to 3.3V, it will rece
 #### Asserting SS
 If you are using hardware control, SS will be asserted and deasserted automatically by hardware.
 
-**If you are using software control, you must assert SS before running any functions in the API. SS must be deasserted afterwards.**
+**If you are using software control, you must assert SS before running any functions in the API. SS must also be deasserted afterwards.**
 
 #### Transmit and Receive (Exchange)
 
@@ -114,7 +116,7 @@ The exchange functions `SPI1_exchangeByte` and `SPI1_exchangeBytes` send data wh
 
 The function `SPI1_exchangeByte` is a wrapper over the multi-byte function `SPI1_exchangeBytes`. Unlike `SPI1_exchangeBytes`, however, the exchange byte function returns the data received, rather than loading it directly into a receiving buffer.
 
-`SPI1_exchangeBytes` sends and receives `len` bytes of data. The `txData` buffer is transmitted, while the `rxData` buffer is filled.
+`SPI1_exchangeBytes` sends and receives `len` bytes of data. The `txData` buffer is transmitted, while the `rxData` buffer is filled with data.
 
 #### Transmit Only Operations (Send)
 
@@ -125,6 +127,8 @@ The function `SPI1_sendByte` is a wrapper over the multi-byte function `SPI1_sen
 #### Receive Only Operations (Receive)
 
 The receive functions `SPI1_recieveByte` and `SPI1_recieveBytes` disable the transmitter while receiving data. The transmitter will still transmit, however it will either be the 1st byte in the transmitter's FIFO queue (which is not advanced) or the last received byte. Please consult the datasheet for more information. 
+
+The function `SPI1_recieveByte` is a wrapper over the multi-byte function `SPI1_recieveBytes`. `SPI1_receiveByte` returns the received value directly, rather than loading it into a buffer.
 
 ### API Reference 
 
@@ -145,6 +149,12 @@ The client mode driver is defined in `spi1_client.h` and `spi1_client.c`. Both p
 
 **Caution: Setup time is required between SS being asserted and communication beginning. With the host driver, use software I/O control.**
 
+### Test Pattern Behavior
+
+When the client device is connected to a host that is transmitting a fixed sequence of data, data from the host is loaded into a buffer, then resent to the host. It takes 1 full transmission cycle for the data of the client to become consistent with that of the host. For example, if the host was sending 1,2,3,4 periodically, the client would send 1,2,3,4 after a full cycle.
+
+This pattern tests whether the client driver is able to read / write / detect state changes. 
+
 ### Configuring the Driver
 
 #### Selecting I/O  
@@ -154,7 +164,7 @@ Like the host driver, I/O is configured in `SPI1_initPins`. Modifying the PPS an
 By default, the driver does not enable interrupts. SPI interrupts are enabled by the function `SPI1_enableInterrupts` and disabled by `SPI1_disableInterrupts`. The start and stop interrupts are not enabled until an appropriate callback function is set (see *Configuring Interrupt Callbacks* in the interrupt mode description).
 
 #### Modifying the Interrupt Vector  
-With interrupts on, the VIC is used by the interrupt definitions. The VIC base address is set in `interrupts.h` by `INTERRUPT_BASE`.
+With interrupts on, the VIC is used by the interrupt definitions. The VIC base address is set in `interrupts.h` by the macro `INTERRUPT_BASE`.
 
 #### Transmit and Receive Enable  
 Before using the driver, the transmitter and receiver must be enabled. The functions `SPI1_enableTransmit` and `SPI1_enableReceive` set the flags in the hardware to enable this functionality. If desired, these can be disabled later with `SPI1_disableTransmit` and `SPI1_disableReceive`. 
@@ -166,11 +176,11 @@ In polling mode, the microcontroller blocks until SPI activity occurs. The polli
 
 Fundementally, SPI has 2 states dictated by SS. When SS is deasserted, serial communication is ignored by the module, and thus the driver is inactive. When SS is asserted, serial communication can begin at anytime. The standalone SPI peripheral contains dedicated hardware that can detect when SS changes state. These flags are set by the hardware and are accessible in the functions `SPI1_isStopped` and `SPI1_isStarted`. 
 
-When a stop flag is asserted, the driver needs to cease communication, as no further clock signals will be incoming. When the start flag is asserted, the SS line has been asserted, which suggests communication will begin shortly. 
+When a stop flag is set, the driver needs to cease communication, as the host has stopped communication. When the start flag is set, the SS line has been asserted, which suggests communication will begin. 
 
 Note: Some devices like Analog-to-Digital Converters (ADCs) can trigger conversions when SS is asserted. After a delay from the host, the result can be read back from the device. As the polling state machine function is created by the user, such functionality could be mimicked, if desired. 
 
-With these 2 flags, the stop flag should **always** preempt and clear a start flag. Both start and stop flags must be cleared in software with `SPI1_clearStartFlag` and `SPI1_clearStopFlag`.
+With these 2 flags, the stop flag should **always** preempt and clear a start flag. Both start and stop flags must be manually cleared in software with `SPI1_clearStartFlag` and `SPI1_clearStopFlag`.
 
 #### Data Receive and Transmit
 
@@ -242,19 +252,17 @@ void SPI_TEST_Polling(void)
 
 The interrupt mode driver is more flexible driver than the polling mode driver, as the interrupts do not block execution of software while running. However, this results in more complexity to implement desired behavior. 
 
-**Important: Global interrupts must be enabled on the device.**
+**Important: Global interrupts must also be enabled on the device.**
 
 #### Configuring Interrupt Callbacks
-The driver provides 4 interrupts:
+The driver provides 4 interrupts for users to use. 
 
 - Transmit (Can load data into queue)
 - Receive (Can read data from queue)
 - Start
 - Stop
 
-When SPI interrupts are enabled (via `SPI1_enableInterrupts`), only transmit and receive interrupts will be generated by the hardware (the generic SPI flag interrupt is enabled, but has nothing to trigger an interrupt). To generate start and stop interrupts, assign an interrupt handler to the start and stop flags with `SPI1_setStartHandler` and `SPI1_setStopHandler`. 
-
-Note: If these start and stop interrupts are enabled outside of the driver, the driver will handle them without issue. 
+When SPI interrupts are enabled (via `SPI1_enableInterrupts`), only transmit and receive interrupts will be generated by the hardware (the generic SPI flag interrupt is enabled, but has nothing to trigger an interrupt). To generate start and stop interrupts, assign an interrupt handler to the start and stop flags with `SPI1_setStartHandler` and `SPI1_setStopHandler`. (If no interrupt handler is needed, pass 0x00 to the functions to enable without a callback).
 
 For transmit and receive, if no user function is provided, default behavior will be executed instead. In the case of transmit, 0x00 is loaded into the buffer. For receive, data is read and discarded.
 
@@ -322,10 +330,10 @@ void SPI_TEST_myRXFunction(uint8_t data)
 | void SPI1_clearStopFlag(void) | Clears the stop flag
 | uint8_t SPI1_readData(void) | Reads a byte of data from the RX FIFO
 | void SPI1_writeData(uint8_t data) | Writes a byte of data to the TX FIFO
-| void SPI1_enableTransmit(void) | Enable transmit
-| void SPI1_disableTransmit(void) | Disable transmit
-| void SPI1_enableReceive(void) | Enable receive
-| void SPI1_disableReceive(void) | Disable receive
+| void SPI1_enableTransmit(void) | Enable transmitter
+| void SPI1_disableTransmit(void) | Disable transmitter
+| void SPI1_enableReceive(void) | Enable receiver
+| void SPI1_disableReceive(void) | Disable receiver
 | void SPI1_enableInterrupts(void) | Enable SPI Interrupts
 | void SPI1_disableInterrupts(void) | Disable SPI Interrupts
 | void SPI1_setTXHandler(uint8_t (*callback)(void)) | Sets a TX callback function when new data can be sent. Interrupts must be enabled for the callback to be run.
